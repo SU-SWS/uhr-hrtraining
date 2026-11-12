@@ -4,4 +4,4 @@
 bin/
 .yarn
 node_modules
-css
+/css
