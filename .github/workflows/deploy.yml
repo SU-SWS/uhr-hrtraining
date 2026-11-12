@@ -3,14 +3,18 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [ main ]
+  # Pull requests only build, to catch errors before merging; they never deploy.
   pull_request:
     branches: [ main ]
+  # Allow a manual redeploy from the Actions tab.
+  workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
+  actions: read
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
@@ -21,37 +25,40 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
-      
+      uses: actions/checkout@v7
+
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
-        node-version: '20'
+        node-version: '24'
 
     - name: Activate Yarn 4
       run: corepack enable
-        
+
     - name: Install dependencies
-      run: yarn
-      
+      run: yarn install --immutable
+
     - name: Build CSS
       run: yarn build-css
 
     - name: Remove node_modules
       run: rm -rf node_modules
-      
+
     - name: Setup Pages
-      uses: actions/configure-pages@v4
-      
+      uses: actions/configure-pages@v6
+
+    # Hidden files (.github, .yarnrc.yml, etc.) are excluded from the artifact by default.
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v5
       with:
         path: '.'
-        
+
   deploy:
+    # Only deploy from main, never from pull requests.
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -60,4 +67,4 @@ jobs:
     steps:
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v4
+      uses: actions/deploy-pages@v5
